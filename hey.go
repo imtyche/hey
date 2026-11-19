@@ -66,41 +66,37 @@ var (
 	proxyAddr          = flag.String("x", "", "")
 )
 
-var usage = `Usage: hey [options...] <url>
+var usage = `用法：hey [选项...] <网址>
 
-Options:
-  -n  Number of requests to run. Default is 200.
-  -c  Number of workers to run concurrently. Total number of requests cannot
-      be smaller than the concurrency level. Default is 50.
-  -q  Rate limit, in queries per second (QPS) per worker. Default is no rate limit.
-  -z  Duration of application to send requests. When duration is reached,
-      application stops and exits. If duration is specified, n is ignored.
-      Examples: -z 10s -z 3m.
-  -o  Output type. If none provided, a summary is printed.
-      "csv" is the only supported alternative. Dumps the response
-      metrics in comma-separated values format.
+选项：
+  -n  要执行的请求次数，默认 200。
+  -c  并发工作线程数。请求总数不能小于并发数，默认 50。
+  -q  每个工作线程的每秒请求数（QPS）限速，默认不限速。
+  -z  持续压测时间。达到时间后停止并退出；指定此项时忽略 -n。
+      示例：-z 10s 或 -z 3m。
+  -o  输出格式。未指定时打印中文汇总。
+      目前支持的替代格式为 "csv"，以逗号分隔值格式输出各次响应指标。
 
-  -m  HTTP method, one of GET, POST, PUT, DELETE, HEAD, OPTIONS.
-  -H  Custom HTTP header. You can specify as many as needed by repeating the flag.
-      For example, -H "Accept: text/html" -H "Content-Type: application/xml" .
-  -t  Timeout for each request in seconds. Default is 20, use 0 for infinite.
-  -A  HTTP Accept header.
-  -d  HTTP request body.
-  -D  HTTP request body from file. For example, /home/user/file.txt or ./file.txt.
-  -T  Content-type, defaults to "text/html".
-  -U  User-Agent, defaults to version "hey/0.0.1".
-  -a  Basic authentication, username:password.
-  -x  HTTP Proxy address as host:port.
-  -h2 Enable HTTP/2.
+  -m  HTTP 方法，可选 GET、POST、PUT、DELETE、HEAD、OPTIONS。
+  -H  自定义 HTTP 请求头。可重复指定，例如：
+      -H "Accept: text/html" -H "Content-Type: application/xml"
+  -t  每个请求的超时时间（秒），默认 20，0 表示无限超时。
+  -A  HTTP Accept 请求头。
+  -d  HTTP 请求正文。
+  -D  从文件读取 HTTP 请求正文，例如 /home/user/file.txt 或 ./file.txt。
+  -T  Content-Type，默认为 text/html。
+  -U  User-Agent，默认为 hey/0.0.1。
+  -a  基本认证，格式为 用户名:密码。
+  -x  HTTP 代理地址，格式为 host:port。
+  -h2 启用 HTTP/2。
 
-  -host	HTTP Host header.
+  -host HTTP Host 请求头。
 
-  -disable-compression  Disable compression.
-  -disable-keepalive    Disable keep-alive, prevents re-use of TCP
-                        connections between different HTTP requests.
-  -disable-redirects    Disable following of HTTP redirects
-  -cpus                 Number of used cpu cores.
-                        (default for current machine is %d cores)
+  -disable-compression  禁用压缩。
+  -disable-keepalive    禁用 keep-alive，不复用不同请求的 TCP 连接。
+  -disable-redirects    禁止跟随 HTTP 重定向。
+  -cpus                 使用的 CPU 核心数。
+                        （当前机器默认为 %d 核）
 `
 
 func main() {
@@ -125,29 +121,26 @@ func main() {
 	if dur > 0 {
 		num = math.MaxInt32
 		if conc <= 0 {
-			usageAndExit("-c cannot be smaller than 1.")
+			usageAndExit("-c 不能小于 1。")
 		}
 	} else {
 		if num <= 0 || conc <= 0 {
-			usageAndExit("-n and -c cannot be smaller than 1.")
+			usageAndExit("-n 和 -c 不能小于 1。")
 		}
 
 		if num < conc {
-			usageAndExit("-n cannot be less than -c.")
+			usageAndExit("-n 不能小于 -c。")
 		}
 	}
 
 	url := flag.Args()[0]
 	method := strings.ToUpper(*m)
 
-	// set content-type
 	header := make(http.Header)
 	header.Set("Content-Type", *contentType)
-	// set any other additional headers
 	if *headers != "" {
-		usageAndExit("Flag '-h' is deprecated, please use '-H' instead.")
+		usageAndExit("参数 '-h' 已弃用，请改用 '-H'。")
 	}
-	// set any other additional repeatable headers
 	for _, h := range hs {
 		match, err := parseInputWithRegexp(h, headerRegexp)
 		if err != nil {
@@ -160,7 +153,6 @@ func main() {
 		header.Set("Accept", *accept)
 	}
 
-	// set basic auth if set
 	var username, password string
 	if *authHeader != "" {
 		match, err := parseInputWithRegexp(*authHeader, authRegexp)
@@ -200,7 +192,6 @@ func main() {
 		req.SetBasicAuth(username, password)
 	}
 
-	// set host header if set
 	if *hostHeader != "" {
 		req.Host = *hostHeader
 	}
@@ -213,7 +204,6 @@ func main() {
 	}
 	header.Set("User-Agent", ua)
 
-	// set userAgent header if set
 	if *userAgent != "" {
 		ua = *userAgent + " " + heyUA
 		header.Set("User-Agent", ua)
@@ -272,7 +262,7 @@ func parseInputWithRegexp(input, regx string) ([]string, error) {
 	re := regexp.MustCompile(regx)
 	matches := re.FindStringSubmatch(input)
 	if len(matches) < 1 {
-		return nil, fmt.Errorf("could not parse the provided input; input = %v", input)
+		return nil, fmt.Errorf("无法解析提供的参数；参数 = %v", input)
 	}
 	return matches, nil
 }

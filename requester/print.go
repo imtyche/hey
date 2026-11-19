@@ -82,7 +82,6 @@ func histogram(buckets []Bucket) string {
 	}
 	res := new(bytes.Buffer)
 	for i := 0; i < len(buckets); i++ {
-		// Normalize bar lengths.
 		var barLen int
 		if max > 0 {
 			barLen = (buckets[i].Count*40 + max/2) / max
@@ -94,35 +93,35 @@ func histogram(buckets []Bucket) string {
 
 var (
 	defaultTmpl = `
-Summary:
-  Total:	{{ formatNumber .Total.Seconds }} secs
-  Slowest:	{{ formatNumber .Slowest }} secs
-  Fastest:	{{ formatNumber .Fastest }} secs
-  Average:	{{ formatNumber .Average }} secs
-  Requests/sec:	{{ formatNumber .Rps }}
+汇总：
+  总耗时：\t{{ formatNumber .Total.Seconds }} 秒
+  最慢：\t{{ formatNumber .Slowest }} 秒
+  最快：\t{{ formatNumber .Fastest }} 秒
+  平均：\t{{ formatNumber .Average }} 秒
+  每秒请求数：\t{{ formatNumber .Rps }}
   {{ if gt .SizeTotal 0 }}
-  Total data:	{{ .SizeTotal }} bytes
-  Size/request:	{{ .SizeReq }} bytes{{ end }}
+  总数据量：\t{{ .SizeTotal }} 字节
+  平均每请求：\t{{ .SizeReq }} 字节{{ end }}
 
-Response time histogram:
+响应时间直方图：
 {{ histogram .Histogram }}
 
-Latency distribution:{{ range .LatencyDistribution }}
-  {{ .Percentage }}%% in {{ formatNumber .Latency }} secs{{ end }}
+延迟分布：{{ range .LatencyDistribution }}
+  {{ .Percentage }}%% 的请求在 {{ formatNumber .Latency }} 秒内{{ end }}
 
-Details (average, fastest, slowest):
-  DNS+dialup:	{{ formatNumber .AvgConn }} secs, {{ formatNumber .ConnMax }} secs, {{ formatNumber .ConnMin }} secs
-  DNS-lookup:	{{ formatNumber .AvgDNS }} secs, {{ formatNumber .DnsMax }} secs, {{ formatNumber .DnsMin }} secs
-  req write:	{{ formatNumber .AvgReq }} secs, {{ formatNumber .ReqMax }} secs, {{ formatNumber .ReqMin }} secs
-  resp wait:	{{ formatNumber .AvgDelay }} secs, {{ formatNumber .DelayMax }} secs, {{ formatNumber .DelayMin }} secs
-  resp read:	{{ formatNumber .AvgRes }} secs, {{ formatNumber .ResMax }} secs, {{ formatNumber .ResMin }} secs
+详细信息（平均、最快、最慢）：
+  DNS+连接：\t{{ formatNumber .AvgConn }} 秒，{{ formatNumber .ConnMax }} 秒，{{ formatNumber .ConnMin }} 秒
+  DNS 查询：\t{{ formatNumber .AvgDNS }} 秒，{{ formatNumber .DnsMax }} 秒，{{ formatNumber .DnsMin }} 秒
+  请求写入：\t{{ formatNumber .AvgReq }} 秒，{{ formatNumber .ReqMax }} 秒，{{ formatNumber .ReqMin }} 秒
+  等待响应：\t{{ formatNumber .AvgDelay }} 秒，{{ formatNumber .DelayMax }} 秒，{{ formatNumber .DelayMin }} 秒
+  响应读取：\t{{ formatNumber .AvgRes }} 秒，{{ formatNumber .ResMax }} 秒，{{ formatNumber .ResMin }} 秒
 
-Status code distribution:{{ range $code, $num := .StatusCodeDist }}
-  [{{ $code }}]	{{ $num }} responses{{ end }}
+状态码分布：{{ range $code, $num := .StatusCodeDist }}
+  [{{ $code }}]\t{{ $num }} 个响应{{ end }}
 
-{{ if gt (len .ErrorDist) 0 }}Error distribution:{{ range $err, $num := .ErrorDist }}
-  [{{ $num }}]	{{ $err }}{{ end }}{{ end }}
+{{ if gt (len .ErrorDist) 0 }}错误分布：{{ range $err, $num := .ErrorDist }}
+  [{{ $num }}]\t{{ $err }}{{ end }}{{ end }}
 `
-	csvTmpl = `{{ $connLats := .ConnLats }}{{ $dnsLats := .DnsLats }}{{ $dnsLats := .DnsLats }}{{ $reqLats := .ReqLats }}{{ $delayLats := .DelayLats }}{{ $resLats := .ResLats }}{{ $statusCodeLats := .StatusCodes }}{{ $offsets := .Offsets}}response-time,DNS+dialup,DNS,Request-write,Response-delay,Response-read,status-code,offset{{ range $i, $v := .Lats }}
-{{ formatNumber $v }},{{ formatNumber (index $connLats $i) }},{{ formatNumber (index $dnsLats $i) }},{{ formatNumber (index $reqLats $i) }},{{ formatNumber (index $delayLats $i) }},{{ formatNumber (index $resLats $i) }},{{ formatNumberInt (index $statusCodeLats $i) }},{{ formatNumber (index $offsets $i) }}{{ end }}`
+	csvTmpl = `{{ $connLats := .ConnLats }}{{ $dnsLats := .DnsLats }}{{ $dnsLats := .DnsLats }}{{ $reqLats := .ReqLats }}{{ $delayLats := .DelayLats }}{{ $resLats := .ResLats }}{{ $statusCodeLats := .StatusCodes }}{{ $offsets := .Offsets }}{{ range $i, $v := .Lats }}{{ formatNumber $v }},{{ formatNumber (index $connLats $i) }},{{ formatNumber (index $dnsLats $i) }},{{ formatNumber (index $reqLats $i) }},{{ formatNumber (index $delayLats $i) }},{{ formatNumber (index $resLats $i) }},{{ index $statusCodeLats $i }},{{ formatNumber (index $offsets $i) }}
+{{ end }}`
 )

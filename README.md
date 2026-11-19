@@ -1,105 +1,95 @@
 ![hey](http://i.imgur.com/szzD9q0.png)
 
-hey is a tiny program that sends some load to a web application.
+hey 是一个向 Web 应用发送负载的小工具。
 
-hey was originally called boom and was influenced from Tarek Ziade's
-tool at [tarekziade/boom](https://github.com/tarekziade/boom). Using the same name was a mistake as it resulted in cases
-where binary name conflicts created confusion.
-To preserve the name for its original owner, we renamed this project to hey.
+hey 原名 boom，受 Tarek Ziade 的 [boom](https://github.com/tarekziade/boom) 工具启发。由于与原项目重名导致二进制名称冲突，为保留原项目名称，本项目更名为 hey。
 
-## Installation
+## 安装
 
-  - Linux (amd64): https://storage.googleapis.com/hey-releases/hey_linux_amd64
-  - macOS (amd64): https://storage.googleapis.com/hey-releases/hey_darwin_amd64
-  - Windows (amd64): https://storage.googleapis.com/hey-releases/hey_windows_amd64
+- Linux (amd64)：https://storage.googleapis.com/hey-releases/hey_linux_amd64
+- macOS (amd64)：https://storage.googleapis.com/hey-releases/hey_darwin_amd64
+- Windows (amd64)：https://storage.googleapis.com/hey-releases/hey_windows_amd64
 
-### Package Managers
+### 包管理器
 
-macOS:
--  [Homebrew](https://brew.sh/) users can use `brew install hey`.
+macOS 用户可通过 Homebrew 安装：
 
-## Usage
+- `brew install hey`
 
-hey runs provided number of requests in the provided concurrency level and prints stats.
+## 用法
 
-It also supports HTTP2 endpoints.
+hey 会以指定的并发级别运行指定数量的请求，并输出中文统计结果。
 
-```
-Usage: hey [options...] <url>
+同时支持 HTTP/2 端点。
 
-Options:
-  -n  Number of requests to run. Default is 200.
-  -c  Number of workers to run concurrently. Total number of requests cannot
-      be smaller than the concurrency level. Default is 50.
-  -q  Rate limit, in queries per second (QPS) per worker. Default is no rate limit.
-  -z  Duration of application to send requests. When duration is reached,
-      application stops and exits. If duration is specified, n is ignored.
-      Examples: -z 10s -z 3m.
-  -o  Output type. If none provided, a summary is printed.
-      "csv" is the only supported alternative. Dumps the response
-      metrics in comma-separated values format.
+```text
+用法：hey [选项...] <网址>
 
-  -m  HTTP method, one of GET, POST, PUT, DELETE, HEAD, OPTIONS.
-  -H  Custom HTTP header. You can specify as many as needed by repeating the flag.
-      For example, -H "Accept: text/html" -H "Content-Type: application/xml" .
-  -t  Timeout for each request in seconds. Default is 20, use 0 for infinite.
-  -A  HTTP Accept header.
-  -d  HTTP request body.
-  -D  HTTP request body from file. For example, /home/user/file.txt or ./file.txt.
-  -T  Content-type, defaults to "text/html".
-  -a  Basic authentication, username:password.
-  -x  HTTP Proxy address as host:port.
-  -h2 Enable HTTP/2.
+选项：
+  -n  要执行的请求次数，默认 200。
+  -c  并发工作线程数，默认 50。
+  -q  每个工作线程的每秒请求数（QPS）限速。
+  -z  持续压测时间；指定后忽略 -n。
+  -o  输出格式，默认为中文汇总；可使用 csv。
 
-  -host	HTTP Host header.
-
-  -disable-compression  Disable compression.
-  -disable-keepalive    Disable keep-alive, prevents re-use of TCP
-                        connections between different HTTP requests.
-  -disable-redirects    Disable following of HTTP redirects
-  -cpus                 Number of used cpu cores.
-                        (default for current machine is 8 cores)
+  -m  HTTP 方法。
+  -H  自定义 HTTP 请求头，可重复指定。
+  -t  每个请求的超时时间（秒），默认 20，0 表示无限超时。
+  -A  HTTP Accept 请求头。
+  -d  HTTP 请求正文。
+  -D  从文件读取 HTTP 请求正文。
+  -T  Content-Type，默认为 text/html。
+  -U  User-Agent。
+  -a  基本认证，格式为 用户名:密码。
+  -x  HTTP 代理地址。
+  -h2 启用 HTTP/2。
+  -host HTTP Host 请求头。
+  -disable-compression  禁用压缩。
+  -disable-keepalive    禁用 keep-alive。
+  -disable-redirects    禁止跟随重定向。
+  -cpus                 使用的 CPU 核心数。
 ```
 
-## Examples
+## 示例
 
-Make requests with default settings:
-```
+使用默认设置发起请求：
+
+```bash
 hey https://google.com
 ```
 
-Make 1000 requests with 100 concurrent workers:
-```
+发起 1000 次请求，100 个并发：
+
+```bash
 hey -n 1000 -c 100 https://google.com
 ```
 
-Run load test for 30 seconds:
-```
+持续压测 30 秒：
+
+```bash
 hey -z 30s https://google.com
 ```
 
-Make POST request with custom body:
-```
-hey \
-    -m POST \
-    -d "param1=value1&param2=value2" \
-    https://google.com
+发送自定义 POST 请求：
+
+```bash
+hey -m POST -d "param1=value1&param2=value2" https://google.com
 ```
 
-Add custom headers:
-```
-hey \
-    -H "Accept: application/json" \
-    -H "Authorization: Bearer token" \
-    https://google.com
+添加自定义请求头：
+
+```bash
+hey -H "Accept: application/json" -H "Authorization: Bearer token" https://google.com
 ```
 
-Test with HTTP/2:
-```
+测试 HTTP/2：
+
+```bash
 hey -h2 https://google.com
 ```
 
-Rate limit to 10 queries per second per worker:
-```
+每个工作线程限制为每秒 10 个请求：
+
+```bash
 hey -q 10 -c 5 -z 30s https://google.com
 ```
