@@ -76,6 +76,46 @@ hey -z 30s https://google.com
 hey -m POST -d "param1=value1&param2=value2" https://google.com
 ```
 
+### 从文件读取 HTTP 请求正文
+
+使用 `-D` 参数可以从文件读取请求正文，适合正文内容较长或包含换行、引号等不便在命令行中直接书写的场景（如 JSON、XML、表单模板文件）。
+
+- `-D` 接收文件路径，支持绝对路径（如 `/home/user/body.json`）和相对路径（如 `./body.json`）。
+- 文件内容会整体作为请求正文，每个请求都会发送相同的内容。
+- 需配合 `-m POST`（或 PUT 等方法）使用，并用 `-T` 指定正确的 Content-Type；`-T` 默认为 `text/html`。
+- 若同时指定 `-d` 和 `-D`，`-D` 的文件内容优先生效。
+- 文件不存在或不可读时会报错退出。
+
+示例：
+
+准备正文文件 `payload.json`：
+
+```json
+{
+  "name": "hey",
+  "type": "loadtest",
+  "items": [1, 2, 3]
+}
+```
+
+以 JSON 正文发起 POST 压测：
+
+```bash
+hey -m POST -T application/json -D ./payload.json -n 1000 -c 100 https://example.com/api
+```
+
+以表单文件正文发起 POST 压测：
+
+```bash
+hey -m POST -T "application/x-www-form-urlencoded" -D ./form.txt https://example.com/submit
+```
+
+以 XML 正文发起 PUT 压测：
+
+```bash
+hey -m PUT -T application/xml -D /home/user/data.xml https://example.com/api/resource
+```
+
 添加自定义请求头：
 
 ```bash
