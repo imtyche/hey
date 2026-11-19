@@ -39,12 +39,13 @@ const (
 )
 
 var (
-	m           = flag.String("m", "GET", "")
+	m           = flag.String("m", "", "")
 	headers     = flag.String("h", "", "")
 	body        = flag.String("d", "", "")
 	bodyFile    = flag.String("D", "", "")
+	httpFile    = flag.String("f", "", "")
 	accept      = flag.String("A", "", "")
-	contentType = flag.String("T", "text/html", "")
+	contentType = flag.String("T", "", "")
 	authHeader  = flag.String("a", "", "")
 	hostHeader  = flag.String("host", "", "")
 	userAgent   = flag.String("U", "", "")
@@ -78,13 +79,20 @@ var usage = `用法：hey [选项...] <网址>
       目前支持的替代格式为 "csv"，以逗号分隔值格式输出各次响应指标。
 
   -m  HTTP 方法，可选 GET、POST、PUT、DELETE、HEAD、OPTIONS。
+      默认为 GET；指定 -f 时默认使用文件中的方法。
   -H  自定义 HTTP 请求头。可重复指定，例如：
       -H "Accept: text/html" -H "Content-Type: application/xml"
   -t  每个请求的超时时间（秒），默认 20，0 表示无限超时。
   -A  HTTP Accept 请求头。
   -d  HTTP 请求正文。
   -D  从文件读取 HTTP 请求正文，例如 /home/user/file.txt 或 ./file.txt。
-  -T  Content-Type，默认为 text/html。
+  -f  从 .http 文件读取请求（方法、URL、请求头、正文），
+      文件格式兼容 JetBrains/VS Code REST Client。
+      文件中必须有且仅有一个请求，否则报错退出。
+      命令行显式指定的 -m/-H/-T/-d/-D 会覆盖文件中的对应内容；
+      提供 -f 时 URL 位置参数可省略（使用文件中的 URL）。
+  -T  Content-Type，默认为 text/html；-f 文件中已含
+      Content-Type 且未显式指定 -T 时，以文件为准。
   -U  User-Agent，默认为 hey/0.0.1。
   -a  基本认证，格式为 用户名:密码。
   -x  HTTP 代理地址，格式为 host:port。
@@ -108,7 +116,7 @@ func main() {
 	flag.Var(&hs, "H", "")
 
 	flag.Parse()
-	if flag.NArg() < 1 {
+	if flag.NArg() < 1 && *httpFile == "" {
 		usageAndExit("")
 	}
 
@@ -133,11 +141,43 @@ func main() {
 		}
 	}
 
-	url := flag.Args()[0]
+	url := ""
+	if flag.NArg() >= 1 {
+		url = flag.Args()[0]
+	}
+
+	var fh *httpFileRequest
+	if *httpFile != "" {
+		var err error
+		fh, err = parseHTTPFile(*httpFile)
+		if err != nil {
+			errAndExit(err.Error())
+		}
+		if url == "" {
+			url = fh.URL
+		}
+	}
+
 	method := strings.ToUpper(*m)
+	if method == "" {
+		if fh != nil {
+			method = fh.Method
+		} else {
+			method = "GET"
+		}
+	}
 
 	header := make(http.Header)
-	header.Set("Content-Type", *contentType)
+	if fh != nil {
+		header = fh.Headers
+	}
+	ct := *contentType
+	if ct == "" && header.Get("Content-Type") == "" {
+		ct = "text/html"
+	}
+	if ct != "" {
+		header.Set("Content-Type", ct)
+	}
 	if *headers != "" {
 		usageAndExit("参数 '-h' 已弃用，请改用 '-H'。")
 	}
@@ -172,6 +212,9 @@ func main() {
 			errAndExit(err.Error())
 		}
 		bodyAll = slurp
+	}
+	if bodyAll == nil && fh != nil {
+		bodyAll = fh.Body
 	}
 
 	var proxyURL *gourl.URL

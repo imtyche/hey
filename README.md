@@ -38,6 +38,7 @@ hey 会以指定的并发级别运行指定数量的请求，并输出中文统�
   -A  HTTP Accept 请求头。
   -d  HTTP 请求正文。
   -D  从文件读取 HTTP 请求正文。
+  -f  从 .http 文件读取请求（方法、URL、请求头、正文）。
   -T  Content-Type，默认为 text/html。
   -U  User-Agent。
   -a  基本认证，格式为 用户名:密码。
@@ -115,6 +116,37 @@ hey -m POST -T "application/x-www-form-urlencoded" -D ./form.txt https://example
 ```bash
 hey -m PUT -T application/xml -D /home/user/data.xml https://example.com/api/resource
 ```
+
+### 从 .http 文件读取请求
+
+使用 `-f` 参数可以从 `.http` 文件读取完整的请求定义（方法、URL、请求头、正文），文件格式兼容 JetBrains HTTP Client / VS Code REST Client。
+
+`payload.http` 示例：
+
+```http
+### 创建用户
+POST https://example.com/api/users HTTP/1.1
+Content-Type: application/json
+X-Trace: abc123
+
+{
+  "name": "hey",
+  "items": [1, 2, 3]
+}
+```
+
+发起压测（URL 可省略，默认取文件中的 URL）：
+
+```bash
+hey -f ./payload.http -n 1000 -c 100
+```
+
+规则说明：
+
+- 文件中**必须有且仅有一个请求**；包含多个请求块（以 `###` 分隔）时会报错退出：`只允许包含一个请求，但文件中包含 N 个`。
+- `#` 或 `//` 开头的行为注释。
+- 命令行显式指定的 `-m`、`-H`、`-T`、`-d`、`-D` 会覆盖文件中的对应内容；URL 位置参数若提供，也会覆盖文件中的 URL。
+- 文件中已包含 `Content-Type` 且未显式指定 `-T` 时，以文件中的值为准。
 
 添加自定义请求头：
 
